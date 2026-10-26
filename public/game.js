@@ -10,7 +10,7 @@
   };
   const avatars = ['🍓','🍋','🍇','🍊','🫐','🍏','🍭','🧁'];
   const rows = 8, cols = 8, colors = Object.keys(candy).filter(k => k !== 'rainbow');
-  let roomCode = '', selfId = '', hostId = '', players = [], board = [], selected = null, downCell = null;
+  let roomCode = '', selfId = '', hostId = '', players = [], board = [], selected = null, downGesture = null;
   let playing = false, score = 0, goal = null, goalCount = 0, goalDone = false, combo = 0, bestCombo = 0, lastMatchAt = 0;
   let timeLeft = 90, partyMeter = 0, soundOn = localStorage.getItem('sugarSound') !== 'off', audioCtx, swipeAt = 0, eventTimer = null, actionLock = false;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -34,19 +34,30 @@
 
   function playerName() { return shortName($('#playerName').value.trim() || 'Jellybean'); }
   $('#createRoom').addEventListener('click', () => { showError('#homeError',''); socket.emit('create-room', { name: playerName() }); });
-  $('#joinRoom').addEventListener('click', () => { const code = $('#roomCodeInput').value.toUpperCase().replace(/[^A-Z0-9]/g,''); if (code.length < 4) return showError('#homeError','Room code 5 letters ka hota hai.'); showError('#homeError',''); socket.emit('join-room', { code, name: playerName() }); });
+  $('#joinRoom').addEventListener('click', () => { const code = $('#roomCodeInput').value.toUpperCase().replace(/[^A-Z0-9]/g,''); if (code.length !== 5) return showError('#homeError','Room code me 5 letters ya numbers hone chahiye.'); showError('#homeError',''); socket.emit('join-room', { code, name: playerName() }); });
   $('#roomCodeInput').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5); });
   $('#roomCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#joinRoom').click(); });
   $('#playerName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#createRoom').click(); });
-  $('#startGame').addEventListener('click', () => { if (hostId !== selfId) return toast('Host hi round start kar sakta hai!'); socket.emit('start-game'); });
+  $('#startGame').addEventListener('click', () => { if (hostId !== selfId) return toast('Host hi party match shuru kar sakta hai!'); if (players.filter(p => !p.isBot).length < 2) return toast('Pehle ek friend ko invite karo.'); socket.emit('start-game'); });
+  $('#practiceButton').addEventListener('click', () => { if (hostId !== selfId) return; $('#practiceModal').classList.remove('hidden'); $('#confirmPractice').focus(); });
+  $('#cancelPractice').addEventListener('click', closePracticeModal);
+  $('#confirmPractice').addEventListener('click', () => { closePracticeModal(); socket.emit('start-practice'); });
+  $('#practiceModal').addEventListener('click', e => { if(e.target.id==='practiceModal') closePracticeModal(); });
+  document.addEventListener('keydown', e => { if(e.key==='Escape'&&!$('#practiceModal').classList.contains('hidden')) closePracticeModal(); });
+  function closePracticeModal() { $('#practiceModal').classList.add('hidden'); $('#practiceButton').focus(); }
   $('#copyCode').addEventListener('click', async () => { try { await navigator.clipboard.writeText(roomCode); toast('Room code copied! Doston ko bhejo 🎉'); } catch { toast(`Room code: ${roomCode}`); } });
+  const inviteLink = () => `${location.origin}/?room=${encodeURIComponent(roomCode)}`;
+  function setInviteUrl() { $('#inviteUrlDisplay').textContent = roomCode ? inviteLink() : ''; }
+  async function copyInvite() { const url=inviteLink(); try { await navigator.clipboard.writeText(url); toast('Invite link copied. Ab friends ko bhejo! 🔗'); } catch { window.prompt('Is invite link ko copy karke bhejo:',url); } }
+  $('#copyInviteLink').addEventListener('click', copyInvite);
+  $('#shareInvite').addEventListener('click', async () => { const url=inviteLink(); if(navigator.share){try{await navigator.share({title:'Join my Candy Clash party!',text:`Room ${roomCode} me Candy Clash khelne aao 🍬`,url});}catch(error){if(error.name!=='AbortError')copyInvite();}}else copyInvite(); });
   $('#leaveLobby').addEventListener('click', leaveToHome); $('#leaveGame').addEventListener('click', leaveToHome); $('#backHome').addEventListener('click', leaveToHome);
   $('#playAgain').addEventListener('click', () => { if (hostId !== selfId) { toast('Host ko bolo ek aur round start kare!'); return; } socket.emit('play-again'); });
   function leaveToHome() { socket.emit('leave-room'); roomCode = ''; playing = false; selected = null; showScreen('home'); }
 
   socket.on('connect', () => { selfId = socket.id; });
-  socket.on('room-created', ({ code }) => { roomCode = code; $('#roomCodeDisplay').textContent = code; $('#gameRoomCode').textContent = code; $('#footerCode').textContent = code; showScreen('lobby'); });
-  socket.on('joined-room', ({ code }) => { roomCode = code; $('#roomCodeDisplay').textContent = code; $('#gameRoomCode').textContent = code; $('#footerCode').textContent = code; showScreen('lobby'); });
+  socket.on('room-created', ({ code }) => { roomCode = code; $('#roomCodeDisplay').textContent = code; $('#gameRoomCode').textContent = code; $('#footerCode').textContent = code; setInviteUrl(); showScreen('lobby'); });
+  socket.on('joined-room', ({ code }) => { roomCode = code; $('#roomCodeDisplay').textContent = code; $('#gameRoomCode').textContent = code; $('#footerCode').textContent = code; setInviteUrl(); showScreen('lobby'); });
   socket.on('room-state', state => { roomCode = state.code; hostId = state.hostId; players = state.players || []; partyMeter = state.partyMeter || 0; $('#roomCodeDisplay').textContent = roomCode; $('#gameRoomCode').textContent = roomCode; $('#footerCode').textContent = roomCode; renderPlayers(); renderLeaderboard(); updatePartyMeter(); if (state.status === 'playing') { timeLeft = state.timeLeft ?? timeLeft; } });
   socket.on('game-error', msg => { if (!screens.game.classList.contains('hidden')) toast(msg); else showError('#homeError', msg); });
   socket.on('game-start', data => { goal = data.goal; timeLeft = data.duration || 90; score = 0; goalCount = 0; goalDone = false; combo = 0; bestCombo = 0; playing = true; actionLock = false; selected = null; clearEventClass(); createBoard(); updateScore(); updateGoal(); updateTimer(); $('#eventTitle').textContent = 'Sweet moves only'; $('#eventNote').textContent = 'Big combos fill the party meter. Watch for surprise events!'; $('#eventIcon').textContent = '🍡'; showScreen('game'); startConfetti(10); tone(523,.14,'triangle',.05); setTimeout(()=>tone(784,.2,'triangle',.05),110); });
@@ -59,18 +70,23 @@
   socket.on('connect_error', () => showError('#homeError','Server se connect nahi ho pa raha. Thodi der baad try karo.'));
 
   function renderPlayers() {
-    $('#playerCount').textContent = `${players.length} / 8`;
-    $('#lobbyPlayers').innerHTML = players.map((p,i) => `<div class="player-row"><span class="avatar">${avatars[i%avatars.length]}</span><span class="player-name">${escapeHtml(p.name)}${p.id===selfId?' (You)':''}</span>${p.id===hostId?'<span class="host-badge">HOST</span>':''}<i class="player-online"></i></div>`).join('') || '<div class="empty-players">Waiting for players…</div>';
+    const humans=players.filter(p=>!p.isBot).length;
+    $('#playerCount').textContent = `${humans} / 8`;
+    $('#lobbyPlayers').innerHTML = players.map((p,i) => `<div class="player-row"><span class="avatar">${avatars[i%avatars.length]}</span><span class="player-name">${escapeHtml(p.name)}${p.id===selfId?' (You)':''}</span>${p.isBot?'<span class="cpu-badge">CPU</span>':''}${p.id===hostId?'<span class="host-badge">HOST</span>':''}<i class="player-online"></i></div>`).join('') || '<div class="empty-players">Waiting for players…</div>';
     const host = hostId === selfId;
-    $('#startGame').disabled = !host;
-    $('#startGame').style.opacity = host ? '1' : '.6';
-    $('#lobbyReadyTitle').textContent = players.length >= 2 ? 'The crew is ready!' : 'Waiting for your crew...';
-    $('#lobbyReadyText').textContent = host ? (players.length >= 2 ? 'Everyone is here. Hit start and let the sugar storm begin!' : 'Share the code. You can start a practice round now or wait for friends.') : 'The host will start the round when everyone is ready.';
+    const ready = humans >= 2;
+    $('#startGame').disabled = !host || !ready;
+    $('#startGame').style.opacity = host && ready ? '1' : '.55';
+    $('#practiceButton').classList.toggle('hidden', !host || humans !== 1);
+    $('#hostStartWarning').classList.toggle('hidden', !host || ready);
+    $('#lobbyReadyTitle').textContent = ready ? 'The crew is ready!' : 'Waiting for your crew...';
+    $('#lobbyReadyText').textContent = host ? (ready ? 'Everyone is here. Start the party match!' : 'Share the invite link. Start a real match when a friend joins.') : 'The host needs one more real player to start. You can share the invite link too.';
+    $('#hostTip').textContent = host ? (ready ? 'Only the host can start the round.' : 'Or choose Practice against CPU pals to play now.') : 'Only the host can start the round.';
   }
   function renderLeaderboard() {
     const list = $('#leaderboard');
     const sorted = [...players].sort((a,b) => b.score-a.score);
-    list.innerHTML = sorted.map((p,i)=>`<div class="leader-row"><span class="rank-num">${i===0?'👑':i+1}</span><span class="leader-avatar">${avatars[Math.max(0,players.findIndex(x=>x.id===p.id))%avatars.length]}</span><span class="leader-name">${escapeHtml(p.name)}</span>${p.id===selfId?'<span class="you-label">YOU</span>':''}<span class="leader-score">${formatScore(p.score)}</span></div>`).join('') || '<div class="empty-players">Players appear here.</div>';
+    list.innerHTML = sorted.map((p,i)=>`<div class="leader-row"><span class="rank-num">${i===0?'👑':i+1}</span><span class="leader-avatar">${avatars[Math.max(0,players.findIndex(x=>x.id===p.id))%avatars.length]}</span><span class="leader-name">${escapeHtml(p.name)}</span>${p.isBot?'<span class="cpu-badge">CPU</span>':''}${p.id===selfId?'<span class="you-label">YOU</span>':''}<span class="leader-score">${formatScore(p.score)}</span></div>`).join('') || '<div class="empty-players">Players appear here.</div>';
   }
   function renderResults(data) {
     const ranking = data.ranking || [];
@@ -78,7 +94,7 @@
     const winner = data.winner;
     $('#resultTitle').textContent = winner?.id === selfId ? 'You crushed it!' : 'Sweet victory!';
     $('#resultSubtitle').textContent = winner ? `${winner.name} takes the crown. Great game, party crew!` : 'The party was sweeter together.';
-    $('#resultsList').innerHTML = ranking.map((p,i)=>`<div class="result-row ${i===0?'winner':''}"><span class="result-rank">${i===0?'👑':`#${i+1}`}</span><span class="result-name">${escapeHtml(p.name)}${p.id===selfId?' (You)':''}</span>${p.goalDone?'<span class="result-goal">GOAL ✦</span>':''}<span class="result-score">${formatScore(p.score)}</span></div>`).join('') || '<div class="empty-players">No scores this round.</div>';
+    $('#resultsList').innerHTML = ranking.map((p,i)=>`<div class="result-row ${i===0?'winner':''}"><span class="result-rank">${i===0?'👑':`#${i+1}`}</span><span class="result-name">${escapeHtml(p.name)}${p.id===selfId?' (You)':''}</span>${p.isBot?'<span class="cpu-badge">CPU</span>':''}${p.goalDone?'<span class="result-goal">GOAL ✦</span>':''}<span class="result-score">${formatScore(p.score)}</span></div>`).join('') || '<div class="empty-players">No scores this round.</div>';
     $('#playAgain').innerHTML = hostId === selfId ? '<span>🔁</span> Play another round <b>→</b>' : '<span>🎉</span> Ask host to replay <b>→</b>';
   }
   function formatScore(n) { return Math.round(Number(n)||0).toLocaleString('en-US'); }
@@ -112,8 +128,9 @@
   }
   const adjacent = (a,b) => Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1;
   function posFromEl(el) { const cellEl=el.closest('.candy-cell'); if (!cellEl) return null; return {r:+cellEl.dataset.r,c:+cellEl.dataset.c}; }
-  $('#gameBoard').addEventListener('pointerdown',e=>{downCell=posFromEl(e.target);});
-  $('#gameBoard').addEventListener('pointerup',e=>{const up=posFromEl(e.target); if(downCell&&up&&adjacent(downCell,up)){swipeAt=Date.now(); attemptSwap(downCell,up);} downCell=null;});
+  $('#gameBoard').addEventListener('pointerdown',e=>{const down=posFromEl(e.target); if(!down||!playing||actionLock)return; downGesture={...down,x:e.clientX,y:e.clientY,pointerId:e.pointerId}; if(e.pointerType==='touch')e.preventDefault();});
+  window.addEventListener('pointerup',e=>{if(!downGesture)return;const dx=e.clientX-downGesture.x,dy=e.clientY-downGesture.y;const distance=Math.hypot(dx,dy);if(distance>10){const up={r:downGesture.r,c:downGesture.c};if(Math.abs(dx)>Math.abs(dy))up.c+=Math.sign(dx);else up.r+=Math.sign(dy);if(up.r>=0&&up.r<rows&&up.c>=0&&up.c<cols){swipeAt=Date.now();attemptSwap(downGesture,up);}}downGesture=null;});
+  window.addEventListener('pointercancel',()=>{downGesture=null;});
   $('#gameBoard').addEventListener('click',e=>{
     if (!playing || actionLock || Date.now()-swipeAt<350) return;
     const p=posFromEl(e.target); if(!p) return;
@@ -168,5 +185,7 @@
     clearEventClass();const lower=(event.name||'').toLowerCase();if(lower.includes('jelly'))document.body.classList.add('jelly');else if(lower.includes('rain'))document.body.classList.add('sugar-rain');else if(lower.includes('shuffle')){document.body.classList.add('board-shuffle');if(board.length){const flat=board.flat().filter(Boolean).map(x=>x.kind);for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const k=flat.pop()||randomKind();board[r][c]=cell(k,true);}renderBoard();}}else if(lower.includes('rush'))document.body.classList.add('final-rush');tone(720,.18,'triangle',.045,500);startConfetti(11);haptic([15,20,15]);}
 
   // Keep the board valid if a client returns to the tab after a pause.
+  const inviteCode=new URLSearchParams(location.search).get('room')?.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5);
+  if(inviteCode&&inviteCode.length===5){$('#roomCodeInput').value=inviteCode;$('#inviteRoomCode').textContent=inviteCode;$('#inviteNotice').classList.remove('hidden');}
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&playing)updateTimer();});
 })();

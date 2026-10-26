@@ -26,11 +26,12 @@
       <div class="join-card">
         <div class="card-candy candy-float-a">🍬</div><div class="card-candy candy-float-b">🍓</div>
         <div class="join-card-head"><span class="tiny-sparkle">✦</span><div><h2>Join the party</h2><p>No sign-up. Just pick a name and play.</p></div></div>
+        <div id="inviteNotice" class="invite-notice hidden">🎉 You have a party invite for <b id="inviteRoomCode"></b>. Enter your name, then tap Join.</div>
         <label class="field-label" for="playerName">YOUR PARTY NAME</label>
         <input id="playerName" class="text-input" maxlength="16" placeholder="e.g. Jellybean" autocomplete="nickname">
         <button id="createRoom" class="btn btn-primary"><span>🎉</span> Create a party <b>→</b></button>
         <div class="divider"><span>OR JOIN FRIENDS</span></div>
-        <div class="join-row"><input id="roomCodeInput" class="text-input code-input" maxlength="5" placeholder="ROOM CODE" aria-label="Room code"><button id="joinRoom" class="btn btn-secondary">Join <b>→</b></button></div>
+        <div class="join-row"><input id="roomCodeInput" class="text-input code-input" maxlength="5" placeholder="ROOM CODE" aria-label="Room code"><button id="joinRoom" class="btn btn-secondary">Join party <b>→</b></button></div>
         <p class="error-line" id="homeError" aria-live="polite"></p>
         <div class="tiny-note">🍡 Sweet friends. Friendly rivalry. Zero boring turns.</div>
       </div>
@@ -42,9 +43,11 @@
       <div class="lobby-shell">
         <button id="leaveLobby" class="back-link">← Back</button>
         <div class="lobby-title"><div class="eyebrow">THE PARTY IS GATHERING</div><h1>Grab your <span class="sugar-text">sweet spot!</span></h1><p>Send your friends this code. The more candy lovers, the louder the storm.</p></div>
-        <button id="copyCode" class="room-code-card"><small>YOUR ROOM CODE</small><strong id="roomCodeDisplay">-----</strong><span>Tap to copy ⧉</span></button>
+        <button id="copyCode" class="room-code-card"><small>YOUR ROOM CODE</small><strong id="roomCodeDisplay">-----</strong><span>Tap to copy code ⧉</span></button>
+        <div class="invite-actions"><button id="copyInviteLink" class="btn btn-secondary">🔗 Copy invite link</button><button id="shareInvite" class="btn btn-primary">📲 Share with friends</button></div>
+        <div class="invite-url" id="inviteUrlDisplay" aria-live="polite"></div>
         <div class="lobby-content"><div class="player-panel"><div class="panel-title"><span>PARTY CREW</span><span id="playerCount" class="count-badge">0 / 8</span></div><div id="lobbyPlayers" class="player-list"></div></div>
-          <div class="start-panel"><div class="mascot">🧁</div><h2 id="lobbyReadyTitle">Waiting for your crew...</h2><p id="lobbyReadyText">Share the code and get everyone in. You can start with 2–8 players.</p><button id="startGame" class="btn btn-primary start-button"><span>🚀</span> Start sugar rush <b>→</b></button><div class="host-tip">Only the host can start the round.</div></div></div>
+          <div class="start-panel"><div class="mascot">🧁</div><h2 id="lobbyReadyTitle">Waiting for your crew...</h2><p id="lobbyReadyText">Share the code and get everyone in. Start a real match once a friend joins.</p><div id="hostStartWarning" class="host-start-warning">⚠️ Multiplayer won't start until at least one friend joins.</div><button id="startGame" class="btn btn-primary start-button"><span>🚀</span> Start party match <b>→</b></button><button id="practiceButton" class="btn btn-secondary practice-button">🤖 Practice against CPU pals</button><div class="host-tip" id="hostTip">Only the host can start the round.</div></div></div>
         <div id="lobbyError" class="error-line" aria-live="polite"></div>
       </div>
     </section>
@@ -73,6 +76,7 @@
     </section>
   </main>
 
+  <div id="practiceModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="practiceTitle"><div class="modal-card"><div class="modal-mascot">🤖🍬</div><div class="eyebrow">PRACTICE MODE</div><h2 id="practiceTitle">Start a solo practice round?</h2><p>You'll play against three computer candy players. Your friends won't be in this round.</p><div class="modal-actions"><button id="cancelPractice" class="btn btn-secondary">Go back</button><button id="confirmPractice" class="btn btn-primary">Start practice <b>→</b></button></div></div></div>
   <div id="eventToast" class="event-toast hidden"><span id="toastIcon">🌈</span><div><small>PARTY EVENT</small><b id="toastTitle">CANDY RAIN</b><p id="toastNote">Bonus candies are falling!</p></div></div>
   <div id="partyBurst" class="party-burst hidden"><div class="burst-inner"><span>🎉</span><b>PARTY METER FULL!</b><small>YOU DID THAT TOGETHER!</small></div></div>
   <div id="toast" class="toast hidden" aria-live="polite"></div>

@@ -1,41 +1,45 @@
-# Candy Clash: Sugar Storm
+# Candy Clash: Sugar Storm 🍬
 
-A colorful, mobile-friendly real-time match-three party game for 2–8 friends. It uses a separate candy board for every player, a shared room code, a live score table, and a shared party meter.
+A colorful real-time match-three party game made for phones and laptops. Create a room, share its code or invite link, and race your friends through a 90-second candy storm.
 
-## Play features
+## What you can do
 
-- Create a room and share its 5-character code.
-- Join from another phone, tablet, or computer. No account is needed.
-- Play a 90-second round. Match 3 or more candies by tapping two neighboring tiles or swiping between them.
-- Build combo streaks, complete a secret candy goal, create rainbow candies with a match of 4 or more, and fill the shared Party Meter.
-- Surprise events, a final 10-second rush, sound effects, haptics on supported phones, confetti, and a live leaderboard.
-- The host can start a practice round alone or wait for 2–8 friends.
+- Play with **2–8 real players** in a live room.
+- Share a room code or a direct invite link that fills in the code for your friend.
+- Practice alone against **three CPU candy players**. The game asks you to confirm before practice starts.
+- Swipe or tap two neighboring candies to match three or more.
+- Build combo streaks, make rainbow candies, and complete the round's secret candy goal.
+- Fill a shared Party Meter, watch surprise events, and race through the final ten seconds.
+- Enjoy animated effects, sound, and phone vibration where supported. Sound can be turned off.
 
-## Run locally
+## Start playing locally
 
-Requires Node.js 18 or newer.
+You need Node.js 18 or newer.
 
 ```bash
 npm install
 npm start
 ```
 
-Open `http://localhost:10000`. For multiplayer testing on different devices, expose the local server with a tunnel or deploy it publicly.
+Open `http://localhost:10000` in your browser. For real multiplayer, open the public Render URL on each player's device.
 
 ## Deploy on Render
 
-1. Unzip this project.
-2. Create a GitHub repository and upload the unzipped files.
-3. In Render, choose **New → Web Service**, then connect that repository.
-4. Render reads `render.yaml`. Confirm the build command is `npm install` and the start command is `npm start`.
-5. Deploy. Share the resulting Render link with players.
+1. Extract this ZIP.
+2. Create a GitHub repository and upload the files inside the `candy-clash-sugar-storm` folder.
+3. In Render, create a **Web Service** and connect that repository.
+4. Use `npm install` as the build command and `npm start` as the start command. The included `render.yaml` has these settings.
+5. Deploy, then share the Render link or a room invite link with friends.
 
-The app listens on Render's `PORT` setting and uses Socket.IO for live rooms. The `/health` endpoint is available for Render health checks.
+The server reads Render's `PORT` setting. Render can check `/health` to confirm the app is running.
 
-## Project files
+## Project layout
 
-- `server.js` — web server, room codes, player list, timer, score board, party meter, and round events.
-- `public/index.html` — all game screens.
-- `public/style.css` — responsive visual design and animations.
-- `public/game.js` — candy board, matching rules, combos, effects, and sounds.
-- `render.yaml` — Render Web Service setup.
+```text
+public/
+  index.html   Game screens and room lobby
+  style.css    Responsive design and animations
+  game.js      Candy board, matching, effects, and phone controls
+server.js      Rooms, player scores, CPU practice, events, and timer
+render.yaml   Render Web Service settings
+```
