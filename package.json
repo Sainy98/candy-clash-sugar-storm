@@ -1,0 +1,14 @@
+{
+  "name": "candy-clash-sugar-storm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A colorful real-time match-three party game for 2-8 players.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
